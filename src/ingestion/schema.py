@@ -18,28 +18,18 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS players (
             player_id INTEGER PRIMARY KEY,
             full_name VARCHAR(100),
-            team_id INTEGER REFERENCES teams(team_id),
-            position VARCHAR(10),
             is_active BOOLEAN DEFAULT TRUE
-        )
-        """,
-        """
-        CREATE TABLE IF NOT EXISTS games (
-            game_id VARCHAR(20) PRIMARY KEY,
-            game_date DATE,
-            home_team_id INTEGER REFERENCES teams(team_id),
-            away_team_id INTEGER REFERENCES teams(team_id),
-            season VARCHAR(10),
-            home_team_score INTEGER,
-            away_team_score INTEGER
         )
         """,
         """
         CREATE TABLE IF NOT EXISTS player_game_stats (
             id SERIAL PRIMARY KEY,
             player_id INTEGER REFERENCES players(player_id),
-            game_id VARCHAR(20) REFERENCES games(game_id),
-            team_id INTEGER REFERENCES teams(team_id),
+            game_id VARCHAR(20),
+            game_date DATE,
+            season VARCHAR(10),
+            matchup VARCHAR(30),
+            home_away VARCHAR(5),
             minutes_played FLOAT,
             points INTEGER,
             rebounds INTEGER,
@@ -57,7 +47,6 @@ def create_tables():
         )
         """
     ]
-
     conn = get_connection()
     cur = conn.cursor()
     for command in commands:
