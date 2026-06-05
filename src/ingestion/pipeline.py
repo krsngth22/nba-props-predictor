@@ -1,4 +1,3 @@
-import logging
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -6,12 +5,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from ingestion.fetcher import get_all_teams, get_active_players, get_player_gamelog
 from ingestion.transformer import transform_teams, transform_players, transform_gamelog
 from ingestion.loader import load_teams, load_players, load_player_stats
+from ingestion.logger import get_logger
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 SEASONS = ['2023-24', '2024-25']
 MAX_PLAYERS = 50
