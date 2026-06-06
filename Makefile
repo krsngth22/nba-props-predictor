@@ -24,3 +24,6 @@ logs:
 clean:
 	find . -type f -name "*.pyc" -delete
 	find . -type d -name "__pycache__" -exec rm -rf {} +
+
+health:
+	python src/ingestion/health_check.py
