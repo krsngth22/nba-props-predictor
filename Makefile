@@ -1,4 +1,4 @@
-.PHONY: up down pipeline test logs clean
+.PHONY: up down pipeline pipeline-test scheduler test health logs clean
 
 up:
 	docker compose up -d
@@ -15,6 +15,12 @@ pipeline-test:
 scheduler:
 	python src/ingestion/scheduler.py
 
+schema:
+	python src/ingestion/schema.py
+
+health:
+	python src/ingestion/health_check.py
+
 test:
 	pytest -v
 
@@ -24,6 +30,4 @@ logs:
 clean:
 	find . -type f -name "*.pyc" -delete
 	find . -type d -name "__pycache__" -exec rm -rf {} +
-
-health:
-	python src/ingestion/health_check.py
+	find . -type d -name ".pytest_cache" -exec rm -rf {} +
