@@ -11,15 +11,16 @@ An end-to-end machine learning system that predicts NBA player props (points, re
 - **DevOps**: Docker, AWS (EC2, RDS, S3, ECR), GitHub Actions
 
 ## Project Structure
-nba-props/
-|── src/
-│   |── ingestion/      # ETL pipeline (fetch, transform, load, validate)
-│   |── models/         # ML model training and inference
-│   |── api/            # FastAPI backend
-|── tests/              # pytest test suite
-|── notebooks/          # Jupyter exploration notebooks
-|── data/               # Local data files
-|── logs/               # Pipeline log files
+
+    nba-props/
+    ├── src/
+    │   ├── ingestion/      # ETL pipeline (fetch, transform, load, validate)
+    │   ├── models/         # ML model training and inference
+    │   └── api/            # FastAPI backend
+    ├── tests/              # pytest test suite
+    ├── notebooks/          # Jupyter exploration notebooks
+    ├── data/               # Local data files
+    └── logs/               # Pipeline log files
 
 ## Quick Start
 
@@ -31,12 +32,14 @@ nba-props/
 ### Setup
 
 1. Clone the repo:
+
 ```bash
 git clone https://github.com/krsngth22/nba-props-predictor.git
 cd nba-props-predictor
 ```
 
 2. Create virtual environment:
+
 ```bash
 python3 -m venv venv
 source venv/bin/activate
@@ -44,21 +47,25 @@ pip install -r requirements.txt
 ```
 
 3. Start the database:
+
 ```bash
 make up
 ```
 
 4. Apply the schema:
+
 ```bash
 python src/ingestion/schema.py
 ```
 
 5. Seed the data:
+
 ```bash
 make pipeline
 ```
 
 6. Check database health:
+
 ```bash
 make health
 ```
@@ -77,7 +84,11 @@ make health
 | `make clean` | Remove cache files |
 
 ## Pipeline Architecture
-    NBA API -> fetcher.py -> transformer.py -> validator.py -> loader.py -> PostgreSQL
+
+```
+NBA API → fetcher.py → transformer.py → validator.py → loader.py → PostgreSQL
+```
+
 - **fetcher.py** — pulls game logs from the NBA stats API with retry logic
 - **transformer.py** — cleans and normalizes raw data into structured DataFrames
 - **validator.py** — validates data quality before database insertion
