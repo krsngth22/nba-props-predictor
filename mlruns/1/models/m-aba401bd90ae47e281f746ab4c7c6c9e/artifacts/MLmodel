@@ -1,0 +1,22 @@
+artifact_path: /home/thaih/nba-props/mlruns/1/models/m-aba401bd90ae47e281f746ab4c7c6c9e/artifacts
+flavors:
+  python_function:
+    data: model.ubj
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.xgboost
+    python_version: 3.14.4
+  xgboost:
+    code: null
+    data: model.ubj
+    model_class: xgboost.sklearn.XGBRegressor
+    model_format: ubj
+    xgb_version: 3.2.0
+mlflow_version: 3.13.0
+model_id: m-aba401bd90ae47e281f746ab4c7c6c9e
+model_size_bytes: 682957
+model_uuid: m-aba401bd90ae47e281f746ab4c7c6c9e
+prompts: null
+run_id: 5cec097e8a474eafb245c024b464e0a2
+utc_time_created: '2026-06-07 19:14:11.418179'
