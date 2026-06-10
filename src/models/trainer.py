@@ -17,6 +17,18 @@ logger = get_logger(__name__)
 MODEL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'models')
 os.makedirs(MODEL_DIR, exist_ok=True)
 
+DEFAULT_PARAMS = {
+    'n_estimators': 300,
+    'max_depth': 5,
+    'learning_rate': 0.05,
+    'subsample': 0.8,
+    'colsample_bytree': 0.8,
+    'min_child_weight': 3,
+    'gamma': 0.1,
+    'reg_alpha': 0.1,
+    'reg_lambda': 1.0,
+}
+
 def time_series_split_data(df, feature_cols, target, test_size=0.2):
     df = df.sort_values('game_date').reset_index(drop=True)
     split_idx = int(len(df) * (1 - test_size))
@@ -76,22 +88,13 @@ def cross_validate(df, feature_cols, target, params, n_splits=5):
     logger.info(f"CV Mean RMSE: {cv_rmse:.3f} ± {np.std(rmse_scores):.3f}")
     return cv_mae, cv_rmse
 
-def train_model(df, feature_cols, target='points', experiment_name='nba-props'):
+def train_model(df, feature_cols, target='points', params=None, experiment_name='nba-props'):
     logger.info(f"Training model for target: {target}")
 
-    mlflow.set_experiment(experiment_name)
+    if params is None:
+        params = DEFAULT_PARAMS.copy()
 
-    params = {
-        'n_estimators': 300,
-        'max_depth': 5,
-        'learning_rate': 0.05,
-        'subsample': 0.8,
-        'colsample_bytree': 0.8,
-        'min_child_weight': 3,
-        'gamma': 0.1,
-        'reg_alpha': 0.1,
-        'reg_lambda': 1.0,
-    }
+    mlflow.set_experiment(experiment_name)
 
     X_train, X_test, y_train, y_test = time_series_split_data(
         df, feature_cols, target
@@ -99,7 +102,7 @@ def train_model(df, feature_cols, target='points', experiment_name='nba-props'):
 
     cv_mae, cv_rmse = cross_validate(df, feature_cols, target, params)
 
-    with mlflow.start_run(run_name=f"{target}_xgboost"):
+    with mlflow.start_run(run_name=f"{target}_xgboost_tuned"):
         mlflow.log_params(params)
         mlflow.log_param('target', target)
         mlflow.log_param('n_features', len(feature_cols))
@@ -131,7 +134,8 @@ def train_model(df, feature_cols, target='points', experiment_name='nba-props'):
             'feature_cols': feature_cols,
             'target': target,
             'test_mae': test_metrics['mae'],
-            'test_rmse': test_metrics['rmse']
+            'test_rmse': test_metrics['rmse'],
+            'params': params
         }, model_path)
 
         logger.info(f"Model saved to {model_path}")
@@ -141,14 +145,19 @@ def train_model(df, feature_cols, target='points', experiment_name='nba-props'):
     return model, test_metrics
 
 if __name__ == "__main__":
-    from db import get_connection
+    from sqlalchemy import create_engine
+    from dotenv import load_dotenv
     from models.features import build_feature_matrix
 
-    conn = get_connection()
+    load_dotenv()
+    engine = create_engine(
+        f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
+        f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+    )
 
     for target in ['points', 'rebounds', 'assists']:
         logger.info(f"\n{'='*50}")
         logger.info(f"Training model for: {target}")
-        df, feature_cols = build_feature_matrix(conn, target=target)
+        df, feature_cols = build_feature_matrix(engine, target=target)
         model, metrics = train_model(df, feature_cols, target=target)
         logger.info(f"Final test MAE for {target}: {metrics['mae']:.3f}")
