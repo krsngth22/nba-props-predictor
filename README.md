@@ -5,7 +5,7 @@ An end-to-end machine learning system that predicts NBA player props (points, re
 ## Tech Stack
 
 - **Data**: Python, pandas, nba_api, PostgreSQL, Docker
-- **ML**: XGBoost, scikit-learn, SHAP, MLflow
+- **ML**: XGBoost, scikit-learn, SHAP, MLflow, Optuna
 - **Backend**: FastAPI, SQLAlchemy, Redis, JWT auth
 - **Frontend**: React, TypeScript, Tailwind CSS, Recharts
 - **DevOps**: Docker, AWS (EC2, RDS, S3, ECR), GitHub Actions
@@ -17,9 +17,10 @@ An end-to-end machine learning system that predicts NBA player props (points, re
     │   ├── ingestion/      # ETL pipeline (fetch, transform, load, validate)
     │   ├── models/         # ML model training and inference
     │   └── api/            # FastAPI backend
-    ├── tests/              # pytest test suite
+    ├── tests/              # pytest test suite (41 tests)
     ├── notebooks/          # Jupyter exploration notebooks
-    ├── data/               # Local data files
+    ├── docs/               # Model cards and documentation
+    ├── data/               # Local data and model artifacts
     └── logs/               # Pipeline log files
 
 ## Quick Start
@@ -94,9 +95,38 @@ NBA API → fetcher.py → transformer.py → validator.py → loader.py → Pos
 - **validator.py** — validates data quality before database insertion
 - **loader.py** — bulk upserts data into PostgreSQL via psycopg2
 
+## ML Architecture
+
+```
+PostgreSQL → features.py → trainer.py → tuner.py → predict.py
+```
+
+- **features.py** — engineers 39 features (rolling averages, lag features, efficiency metrics, opponent ratings)
+- **trainer.py** — trains XGBoost models with TimeSeriesSplit cross-validation
+- **tuner.py** — Optuna hyperparameter search (30 trials per model)
+- **predict.py** — inference module for serving predictions
+- **explainer.py** — SHAP feature importance and prediction explanations
+- **backtest.py** — holdout evaluation simulating real prop betting
+
 ## Model Performance
 
-*Coming soon in Phase 2*
+| Metric | Points | Rebounds | Assists |
+|---|---|---|---|
+| MAE | 2.061 | 2.158 | 0.652 |
+| Within 3 | 77.5% | 76.2% | 96.3% |
+| Within 5 | 90.9% | 92.3% | 99.3% |
+| Within 10 | 98.6% | 99.4% | 100.0% |
+| Bet accuracy | 91.5% | 76.4% | 85.0% |
+
+Models trained on 2 seasons of NBA data (~4,800 player-game records) across 50 active players.
+Tuned with Optuna (30 trials), tracked with MLflow, explained with SHAP.
+
+### Top Features (Points Model)
+1. `points_per_minute` — scoring efficiency
+2. `minutes_played_roll_10` — 10-game average minutes
+3. `minutes_played_roll_20` — 20-game average minutes
+4. `points_roll_20` — 20-game scoring average
+5. `true_shooting_pct` — shooting efficiency
 
 ## Live Demo
 
