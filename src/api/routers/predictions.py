@@ -4,6 +4,8 @@ from sqlalchemy import text
 import pandas as pd
 from src.api.deps import get_db, get_models
 from src.api.schemas import PropPredictionResponse, PropPrediction
+from src.api.auth import get_current_user
+from src.api.cache import get_cached, set_cached
 
 router = APIRouter(prefix="/predictions", tags=["predictions"])
 
@@ -27,7 +29,6 @@ def build_features_from_db(player_id: int, db: Session) -> dict:
     df = pd.DataFrame(result, columns=cols)
 
     features = {}
-
     for stat in ['points', 'rebounds', 'assists', 'minutes_played', 'turnovers']:
         for window in [5, 10, 20]:
             features[f'{stat}_roll_{window}'] = df[stat].head(window).mean()
@@ -61,8 +62,14 @@ def build_features_from_db(player_id: int, db: Session) -> dict:
 @router.get("/{player_id}", response_model=PropPredictionResponse)
 def get_player_predictions(
     player_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
 ):
+    cache_key = f"predictions:{player_id}"
+    cached = get_cached(cache_key)
+    if cached:
+        return PropPredictionResponse(**cached)
+
     player = db.execute(
         text("SELECT player_id, full_name FROM players WHERE player_id = :id"),
         {"id": player_id}
@@ -99,10 +106,13 @@ def get_player_predictions(
             model_mae=round(artifact['test_mae'], 3)
         )
 
-    return PropPredictionResponse(
+    response = PropPredictionResponse(
         player_id=player_id,
         full_name=player[1],
         points=predictions.get('points'),
         rebounds=predictions.get('rebounds'),
         assists=predictions.get('assists')
     )
+
+    set_cached(cache_key, response.model_dump())
+    return response
