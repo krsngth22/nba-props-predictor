@@ -11,12 +11,45 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nba_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     container_name: nba_props_redis
     ports:
       - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: nba_props_api
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: nba_props
+      DB_USER: nba_user
+      DB_PASSWORD: nba_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SECRET_KEY: your-super-secret-jwt-key-change-this-in-production
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 60
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

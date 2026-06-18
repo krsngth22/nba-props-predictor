@@ -135,3 +135,21 @@ Tuned with Optuna (30 trials), tracked with MLflow, explained with SHAP.
 ## Author
 
 [@krsngth22](https://github.com/krsngth22)
+
+## Running with Docker (Full Stack)
+
+Start the entire stack — PostgreSQL, Redis, and the FastAPI backend — with one command:
+
+```bash
+docker compose up -d --build
+```
+
+Once running, the API is available at `http://localhost:8000` and the docs at `http://localhost:8000/docs`.
+
+To seed data inside the dockerized environment, run the pipeline from your host machine — it connects to the same Postgres container via the exposed port 5433.
+
+To stop everything:
+
+```bash
+docker compose down
+```
