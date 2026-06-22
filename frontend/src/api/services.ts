@@ -95,3 +95,24 @@ export const healthService = {
     return response.data
   },
 }
+
+export interface ShapFeature {
+  feature: string
+  shap_value: number
+  value: number
+}
+
+export interface ShapResponse {
+  player_id: number
+  full_name: string
+  target: string
+  prediction: number
+  features: ShapFeature[]
+}
+
+export const shapService = {
+  getExplanation: async (playerId: number, target: string): Promise<ShapResponse> => {
+    const response = await apiClient.get(`/predictions/${playerId}/explain/${target}`)
+    return response.data
+  },
+}

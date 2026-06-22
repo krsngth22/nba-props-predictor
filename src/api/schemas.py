@@ -43,3 +43,15 @@ class HealthResponse(BaseModel):
     database: str
     models_loaded: bool
     version: str
+
+class ShapFeature(BaseModel):
+    feature: str
+    shap_value: float
+    value: float
+
+class ShapResponse(BaseModel):
+    player_id: int
+    full_name: str
+    target: str
+    prediction: float
+    features: List[ShapFeature]

@@ -116,3 +116,64 @@ def get_player_predictions(
 
     set_cached(cache_key, response.model_dump())
     return response
+
+from src.api.schemas import ShapResponse, ShapFeature
+import shap
+
+@router.get("/{player_id}/explain/{target}", response_model=ShapResponse)
+def explain_prediction(
+    player_id: int,
+    target: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    if target not in ['points', 'rebounds', 'assists']:
+        raise HTTPException(status_code=400, detail="Target must be points, rebounds, or assists")
+
+    player = db.execute(
+        text("SELECT player_id, full_name FROM players WHERE player_id = :id"),
+        {"id": player_id}
+    ).fetchone()
+
+    if not player:
+        raise HTTPException(status_code=404, detail=f"Player {player_id} not found")
+
+    features = build_features_from_db(player_id, db)
+    models = get_models()
+
+    if target not in models:
+        raise HTTPException(status_code=503, detail=f"Model for {target} not loaded")
+
+    artifact = models[target]
+    model = artifact['model']
+    feature_cols = artifact['feature_cols']
+
+    row = pd.DataFrame([features])
+    for col in feature_cols:
+        if col not in row.columns:
+            row[col] = 0
+    row = row[feature_cols].fillna(0)
+
+    prediction = float(model.predict(row)[0])
+    prediction = max(0, prediction)
+
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(row)
+
+    shap_features = []
+    for i, feat in enumerate(feature_cols):
+        shap_features.append(ShapFeature(
+            feature=feat,
+            shap_value=float(shap_values[0][i]),
+            value=float(row[feat].iloc[0])
+        ))
+
+    shap_features.sort(key=lambda x: abs(x.shap_value), reverse=True)
+
+    return ShapResponse(
+        player_id=player_id,
+        full_name=player[1],
+        target=target,
+        prediction=round(prediction, 1),
+        features=shap_features[:10]
+    )
