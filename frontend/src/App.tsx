@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Layout from './components/Layout'
 import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
 import PlayerSearch from './components/PlayerSearch'
 import PlayerDetail from './pages/PlayerDetail'
 import type { Player } from './api/services'
@@ -17,7 +18,7 @@ const queryClient = new QueryClient({
   },
 })
 
-function Dashboard() {
+function Main() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
 
   if (selectedPlayer) {
@@ -30,14 +31,11 @@ function Dashboard() {
   }
 
   return (
-    <div className="flex flex-col items-center pt-12">
-      <h1 className="text-3xl font-bold text-white mb-2">
-        NBA Player Prop Predictor
-      </h1>
-      <p className="text-gray-500 mb-8">
-        Search any player to see ML-powered predictions for their next game
-      </p>
-      <PlayerSearch onSelectPlayer={setSelectedPlayer} />
+    <div className="space-y-10">
+      <div className="flex justify-center pt-4">
+        <PlayerSearch onSelectPlayer={setSelectedPlayer} />
+      </div>
+      <Dashboard onSelectPlayer={setSelectedPlayer} />
     </div>
   )
 }
@@ -58,7 +56,7 @@ function App() {
       <AuthProvider>
         <ProtectedRoute>
           <Layout>
-            <Dashboard />
+            <Main />
           </Layout>
         </ProtectedRoute>
       </AuthProvider>

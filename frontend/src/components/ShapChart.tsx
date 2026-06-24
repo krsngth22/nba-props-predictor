@@ -74,7 +74,6 @@ export default function ShapChart({ playerId, target }: ShapChartProps) {
           <Tooltip
             contentStyle={{ backgroundColor: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
             labelStyle={{ color: '#9ca3af' }}
-            formatter={(value: number) => [value > 0 ? `+${value}` : value, 'Impact']}
           />
           <Bar dataKey="impact" radius={[0, 4, 4, 0]}>
             {chartData.map((entry, index) => (
