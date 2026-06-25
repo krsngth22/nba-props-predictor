@@ -75,7 +75,7 @@ interface DashboardProps {
   onSelectPlayer: (player: Player) => void
 }
 
-const FEATURED_PLAYERS = [1626164, 1629029, 203507, 201142, 203954]
+const FEATURED_PLAYERS = [1628389, 203078, 1631128, 1630175, 1626164]
 
 export default function Dashboard({ onSelectPlayer }: DashboardProps) {
   const { data: health } = useQuery({
