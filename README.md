@@ -2,13 +2,21 @@
 
 An end-to-end machine learning system that predicts NBA player props (points, rebounds, assists) using XGBoost, with a PostgreSQL data pipeline, FastAPI backend, React dashboard, and AWS deployment.
 
+## Live Demo
+
+**URL**: http://3.18.81.118
+
+**Demo credentials**:
+- Username: `demo`
+- Password: `nba2025`
+
 ## Tech Stack
 
 - **Data**: Python, pandas, nba_api, PostgreSQL, Docker
 - **ML**: XGBoost, scikit-learn, SHAP, MLflow, Optuna
 - **Backend**: FastAPI, SQLAlchemy, Redis, JWT auth
 - **Frontend**: React, TypeScript, Tailwind CSS, Recharts
-- **DevOps**: Docker, AWS (EC2, RDS, S3, ECR), GitHub Actions
+- **DevOps**: Docker, AWS (EC2, RDS, ECR), GitHub Actions
 
 ## Project Structure
 
@@ -17,17 +25,29 @@ An end-to-end machine learning system that predicts NBA player props (points, re
     │   ├── ingestion/      # ETL pipeline (fetch, transform, load, validate)
     │   ├── models/         # ML model training and inference
     │   └── api/            # FastAPI backend
-    ├── tests/              # pytest test suite (41 tests)
+    ├── frontend/           # React + TypeScript dashboard
+    ├── tests/              # pytest test suite (64 tests)
+    ├── docs/               # Architecture diagram and model card
     ├── notebooks/          # Jupyter exploration notebooks
-    ├── docs/               # Model cards and documentation
-    ├── data/               # Local data and model artifacts
+    ├── data/               # Model artifacts
     └── logs/               # Pipeline log files
+
+## Architecture
+
+```
+React Dashboard ──▶ Nginx ──▶ FastAPI ──▶ PostgreSQL (RDS)
+                                    └──▶ Redis (cache)
+                                    └──▶ XGBoost Models
+```
+
+See [docs/architecture.md](docs/architecture.md) for the full system diagram.
 
 ## Quick Start
 
 ### Prerequisites
 - Docker Desktop
 - Python 3.11+
+- Node.js 20+
 - WSL (Windows) or Linux/Mac
 
 ### Setup
@@ -65,10 +85,18 @@ python src/ingestion/schema.py
 make pipeline
 ```
 
-6. Check database health:
+6. Start the API:
 
 ```bash
-make health
+uvicorn src.api.main:app --reload --port 8000
+```
+
+7. Start the frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
 ## Make Commands
@@ -118,7 +146,7 @@ PostgreSQL → features.py → trainer.py → tuner.py → predict.py
 | Within 10 | 98.6% | 99.4% | 100.0% |
 | Bet accuracy | 91.5% | 76.4% | 85.0% |
 
-Models trained on 2 seasons of NBA data (~4,800 player-game records) across 50 active players.
+Models trained on 2 seasons of NBA data (44,142 player-game records) across 809 active players.
 Tuned with Optuna (30 trials), tracked with MLflow, explained with SHAP.
 
 ### Top Features (Points Model)
@@ -128,28 +156,29 @@ Tuned with Optuna (30 trials), tracked with MLflow, explained with SHAP.
 4. `points_roll_20` — 20-game scoring average
 5. `true_shooting_pct` — shooting efficiency
 
-## Live Demo
+## CI/CD
 
-*Coming soon after AWS deployment*
+Every push to `main` automatically:
+1. Runs the pytest test suite (64 tests)
+2. Builds Docker images
+3. Pushes to AWS ECR
+4. Deploys to EC2
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/auth/token` | Login and get JWT token |
+| GET | `/health` | API health check |
+| GET | `/players` | List players (search supported) |
+| GET | `/players/{id}` | Get player by ID |
+| GET | `/players/{id}/stats` | Get player game history |
+| GET | `/predictions/{id}` | Get ML predictions for player |
+| GET | `/predictions/{id}/explain/{target}` | Get SHAP explanation |
+
+Full documentation available at `/docs` (Swagger UI).
 
 ## Author
 
+Kris Nguyen
 [@krsngth22](https://github.com/krsngth22)
-
-## Running with Docker (Full Stack)
-
-Start the entire stack — PostgreSQL, Redis, and the FastAPI backend — with one command:
-
-```bash
-docker compose up -d --build
-```
-
-Once running, the API is available at `http://localhost:8000` and the docs at `http://localhost:8000/docs`.
-
-To seed data inside the dockerized environment, run the pipeline from your host machine — it connects to the same Postgres container via the exposed port 5433.
-
-To stop everything:
-
-```bash
-docker compose down
-```

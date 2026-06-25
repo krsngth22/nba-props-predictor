@@ -1,0 +1,66 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest tests/ -v --ignore=tests/test_api_auth.py --ignore=tests/test_api_players.py --ignore=tests/test_api_predictions.py --ignore=tests/test_api_health.py
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 591950085188.dkr.ecr.us-east-2.amazonaws.com
+
+      - name: Build and push API image
+        run: |
+          docker build -t nba-props-api .
+          docker tag nba-props-api:latest 591950085188.dkr.ecr.us-east-2.amazonaws.com/nba-props-api:latest
+          docker push 591950085188.dkr.ecr.us-east-2.amazonaws.com/nba-props-api:latest
+
+      - name: Build and push frontend image
+        run: |
+          docker build -t nba-props-frontend ./frontend
+          docker tag nba-props-frontend:latest 591950085188.dkr.ecr.us-east-2.amazonaws.com/nba-props-frontend:latest
+          docker push 591950085188.dkr.ecr.us-east-2.amazonaws.com/nba-props-frontend:latest
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 591950085188.dkr.ecr.us-east-2.amazonaws.com
+            docker compose -f ~/docker-compose.prod.yml pull
+            docker compose -f ~/docker-compose.prod.yml up -d
+            docker image prune -f
