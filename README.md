@@ -181,4 +181,5 @@ Full documentation available at `/docs` (Swagger UI).
 ## Author
 
 Kris Nguyen
+
 [@krsngth22](https://github.com/krsngth22)
